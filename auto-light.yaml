@@ -127,7 +127,7 @@ variables:
 
   standard_brightness: >-
     {%- if sun_elevation < elevation_on -%}
-      {{ max_brightness | int | string }}
+      {{ max_brightness | multiply(vacancy_scale) | int | string }}
     {%- elif sun_elevation > elevation_off -%}
       {{ 0 | int | string }}
     {%- else -%}
