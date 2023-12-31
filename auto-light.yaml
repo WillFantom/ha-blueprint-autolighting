@@ -1,0 +1,194 @@
+blueprint:
+  name: Baisc Light Control
+  description: Control an area's lights based on an occupancy sensor and the sun's position.
+  domain: automation
+  input:
+    target_area:
+      name: Area
+      description: Lights in the given area will be controlled by the automation.
+      selector:
+        area:
+    occupancy_sensor:
+      name: Occupancy Sensor
+      description: |
+        If occupancy is detected by the given sensor, the lights will be set brighter.
+      selector:
+        entity:
+          filter:
+            - domain: binary_sensor
+    toggle_switch:
+      name: Toggle Switch
+      description: |
+        The loop created by this automation will only impact the lights if the switch is on.
+      selector:
+        entity:
+          filter:
+            - domain: input_boolean
+    max_brightness:
+      name: Max Brightness
+      description: |
+        The peak brightness of the lights when sun is fully down and the room is
+        occupied.
+      default: 80
+      selector:
+        number:
+          min: 2
+          max: 100
+          unit_of_measurement: "%"
+          mode: slider
+          step: 1
+    main_light_scale:
+      name: Main Light Scale
+      description: |
+        The peak brightness of the lights with Main in their friendly name will
+        be scaled by this value.
+      default: 60
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+          mode: slider
+          step: 1
+    vacancy_scale:
+      name: Vacancy Scale
+      description: |
+        The peak brightness of the lights will be scaled by this value when the
+        motion sensor determines the room to be unoccupied.
+      default: 30
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+          mode: slider
+          step: 1
+    elevation_on:
+      name: Elevation On
+      description: |
+        The elevation of the sun at which the lights will be at their maximum brightness.
+      default: -1
+      selector:
+        number:
+          min: -90
+          max: 0
+          unit_of_measurement: "°"
+          mode: box
+          step: 1
+    elevation_off:
+      name: Elevation Off
+      description: |
+        The elevation of the sun at which the lights will be at their minimum brightness (off).
+      default: 4
+      selector:
+        number:
+          min: 1
+          max: 90
+          unit_of_measurement: "°"
+          mode: box
+          step: 1
+    transition_time:
+      name: Transition Time
+      description: |
+        How many seconds should the light change brightness/temp over.
+      default: 10
+      selector:
+        number:
+          min: 2
+          max: 30
+          mode: slider
+          step: 1
+
+variables:
+  target_area_input: !input target_area
+  toggle_switch: !input toggle_switch
+
+  transition_time: !input transition_time
+
+  max_brightness_input: !input max_brightness
+  max_brightness: "{{ max_brightness_input | float }}"
+  main_light_scale_input: !input main_light_scale
+  main_light_scale: "{{ main_light_scale_input | float | multiply(0.01) }}"
+
+  occupancy_sensor_input: !input occupancy_sensor
+  vacancy_scale_input: !input vacancy_scale
+  vacancy_scale: >-
+    {%- if states[occupancy_sensor_input].state == 'on' -%}
+      {{ 1 | int }}
+    {%- else -%}
+      {{ vacancy_scale_input | float | multiply(0.01) }}
+    {%- endif -%}
+
+  elevation_on: !input elevation_on
+  elevation_off: !input elevation_off
+  elevation_range: "{{ elevation_off - elevation_on }}"
+  sun_elevation: "{{ state_attr('sun.sun','elevation') }}"
+  sun_scale: "{{ 1 - ((sun_elevation - elevation_on) / (elevation_range)) }}"
+
+  standard_brightness: "{{ max_brightness | multiply(sun_scale) | multiply(vacancy_scale) | int | string }}"
+  main_light_brightness: "{{ standard_brightness | multiply(main_light_scale) | int | string }}"
+
+trigger:
+  - platform: state
+    entity_id: sun.sun
+    attribute: elevation
+  - platform: state
+    entity_id:
+      - !input occupancy_sensor
+    from: null
+    to: null
+  - platform: state
+    entity_id:
+      - !input toggle_switch
+    from: null
+    to: null
+
+condition:
+  - condition: state
+    entity_id: !input toggle_switch
+    state: "on"
+
+action:
+  - service: system_log.write
+    data:
+      level: warning
+      logger: homeassistant.components.blueprint.basic_light_control
+      message: "
+        DEBUG:\n
+        occupancy sensor input: {{ occupancy_sensor_input }}\n
+        occupancy sensor state: {{ states[occupancy_sensor_input].state }}\n
+        sun elevation: {{ sun_elevation }}\n
+        SCALE FACTORS:\n
+        sun: {{ sun_scale }}\n
+        main light: {{ main_light_scale }}\n
+        vacancy: {{ vacancy_scale }}\n
+        BRIGHTNESS:
+        standard: {{ standard_brightness }}%\n
+        main: {{ main_light_brightness }}%\n
+        "
+  - service: light.turn_on
+    target:
+      entity_id: >-
+        {%- set ns = namespace( lights = [] ) -%}
+        {%- for light_entity in expand(area_entities(area_name(target_area_input)) | select('match', 'light')) | list -%}
+          {%- if not 'Main' in state_attr(light_entity.entity_id, 'friendly_name') -%}
+            {%- set ns.lights = ns.lights + [light_entity.entity_id] -%}
+          {%- endif -%}
+        {%- endfor -%}
+        {{ ns.lights }}
+    data:
+      transition: "{{ transition_time }}"
+      brightness_pct: "{{ standard_brightness }}"
+  - service: light.turn_on
+    target:
+      entity_id: >-
+        {%- set ns = namespace( lights = [] ) -%}
+        {%- for light_entity in expand(area_entities(area_name(target_area_input)) | select('match', 'light')) | list -%}
+          {%- if 'Main' in state_attr(light_entity.entity_id, 'friendly_name') -%}
+            {%- set ns.lights = ns.lights + [light_entity.entity_id] -%}
+          {%- endif -%}
+        {%- endfor -%}
+        {{ ns.lights }}
+    data:
+      transition: "{{ transition_time }}"
+      brightness_pct: "{{ main_light_brightness }}"
