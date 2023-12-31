@@ -125,7 +125,14 @@ variables:
   sun_elevation: "{{ state_attr('sun.sun','elevation') }}"
   sun_scale: "{{ 1 - ((sun_elevation - elevation_on) / (elevation_range)) }}"
 
-  standard_brightness: "{{ max_brightness | multiply(sun_scale) | multiply(vacancy_scale) | int | string }}"
+  standard_brightness: >-
+    {%- if sun_elevation < elevation_on -%}
+      {{ max_brightness | int | string }}
+    {%- elif sun_elevation > elevation_off -%}
+      {{ 0 | int | string }}
+    {%- else -%}
+      {{ max_brightness | multiply(sun_scale) | multiply(vacancy_scale) | int | string }}
+    {%- endif -%}
   main_light_brightness: "{{ standard_brightness | multiply(main_light_scale) | int | string }}"
 
 trigger:
@@ -162,7 +169,7 @@ action:
         sun: {{ sun_scale }}\n
         main light: {{ main_light_scale }}\n
         vacancy: {{ vacancy_scale }}\n
-        BRIGHTNESS:
+        BRIGHTNESS:\n
         standard: {{ standard_brightness }}%\n
         main: {{ main_light_brightness }}%\n
         "
