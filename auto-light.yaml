@@ -177,48 +177,49 @@ condition:
     state: "on"
 
 action:
-  - service: system_log.write
-    data:
-      level: warning
-      logger: homeassistant.components.blueprint.basic_light_control
-      message: "
-        DEBUG:\n
-        occupancy sensor input: {{ occupancy_sensor_input }}\n
-        occupancy sensor state: {{ states[occupancy_sensor_input].state }}\n
-        sun elevation: {{ sun_elevation }}\n
-        SCALE FACTORS:\n
-        sun: {{ sun_scale }}\n
-        main light: {{ main_light_scale }}\n
-        vacancy: {{ vacancy_scale }}\n
-        BRIGHTNESS:\n
-        standard: {{ standard_brightness }}%\n
-        main: {{ main_light_brightness }}%\n
-        "
-  - service: light.turn_on
-    target:
-      entity_id: >-
-        {%- set ns = namespace( lights = [] ) -%}
-        {%- for light_entity in expand(area_entities(area_name(target_area_input)) | select('match', 'light')) | list -%}
-          {%- if not 'Main' in state_attr(light_entity.entity_id, 'friendly_name') -%}
-            {%- set ns.lights = ns.lights + [light_entity.entity_id] -%}
-          {%- endif -%}
-        {%- endfor -%}
-        {{ ns.lights }}
-    data:
-      transition: "{{ transition_time }}"
-      brightness_pct: "{{ standard_brightness }}"
-      color_temp: "{{ light_temprature }}"
-  - service: light.turn_on
-    target:
-      entity_id: >-
-        {%- set ns = namespace( lights = [] ) -%}
-        {%- for light_entity in expand(area_entities(area_name(target_area_input)) | select('match', 'light')) | list -%}
-          {%- if 'Main' in state_attr(light_entity.entity_id, 'friendly_name') -%}
-            {%- set ns.lights = ns.lights + [light_entity.entity_id] -%}
-          {%- endif -%}
-        {%- endfor -%}
-        {{ ns.lights }}
-    data:
-      transition: "{{ transition_time }}"
-      brightness_pct: "{{ main_light_brightness }}"
-      color_temp: "{{ light_temprature }}"
+  parallel:
+    - service: system_log.write
+      data:
+        level: warning
+        logger: homeassistant.components.blueprint.basic_light_control
+        message: "
+          DEBUG:\n
+          occupancy sensor input: {{ occupancy_sensor_input }}\n
+          occupancy sensor state: {{ states[occupancy_sensor_input].state }}\n
+          sun elevation: {{ sun_elevation }}\n
+          SCALE FACTORS:\n
+          sun: {{ sun_scale }}\n
+          main light: {{ main_light_scale }}\n
+          vacancy: {{ vacancy_scale }}\n
+          BRIGHTNESS:\n
+          standard: {{ standard_brightness }}%\n
+          main: {{ main_light_brightness }}%\n
+          "
+    - service: light.turn_on
+      target:
+        entity_id: >-
+          {%- set ns = namespace( lights = [] ) -%}
+          {%- for light_entity in expand(area_entities(area_name(target_area_input)) | select('match', 'light')) | list -%}
+            {%- if not 'Main' in state_attr(light_entity.entity_id, 'friendly_name') -%}
+              {%- set ns.lights = ns.lights + [light_entity.entity_id] -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {{ ns.lights }}
+      data:
+        transition: "{{ transition_time }}"
+        brightness_pct: "{{ standard_brightness }}"
+        color_temp: "{{ light_temprature }}"
+    - service: light.turn_on
+      target:
+        entity_id: >-
+          {%- set ns = namespace( lights = [] ) -%}
+          {%- for light_entity in expand(area_entities(area_name(target_area_input)) | select('match', 'light')) | list -%}
+            {%- if 'Main' in state_attr(light_entity.entity_id, 'friendly_name') -%}
+              {%- set ns.lights = ns.lights + [light_entity.entity_id] -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {{ ns.lights }}
+      data:
+        transition: "{{ transition_time }}"
+        brightness_pct: "{{ main_light_brightness }}"
+        color_temp: "{{ light_temprature }}"
