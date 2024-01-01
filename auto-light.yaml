@@ -98,6 +98,22 @@ blueprint:
           max: 30
           mode: slider
           step: 1
+    min_color_temp:
+      name: Minimum Color Temperature
+      description: The coolest color your bulbs will be set to.
+      default: 250
+      selector:
+        color_temp:
+          min_mireds: 153
+          max_mireds: 500
+    max_color_temp:
+      name: Maximum Color Temperature
+      description: The warmest color your bulbs will be set to.
+      default: 454
+      selector:
+        color_temp:
+          min_mireds: 153
+          max_mireds: 500
 
 variables:
   target_area_input: !input target_area
@@ -118,6 +134,11 @@ variables:
     {%- else -%}
       {{ vacancy_scale_input | float | multiply(0.01) }}
     {%- endif -%}
+
+  min_color_temp: !input min_color_temp
+  max_color_temp: !input max_color_temp
+  light_temprature: >-
+    {{ [([((1000000/(4791.67 - 3290.66/(1 + 0.222 * ([([0,state_attr('sun.sun', 'elevation')]|max),90]|min**0.81))))|int),min_color_temp]|max),max_color_temp]|min }}
 
   elevation_on: !input elevation_on
   elevation_off: !input elevation_off
@@ -186,6 +207,7 @@ action:
     data:
       transition: "{{ transition_time }}"
       brightness_pct: "{{ standard_brightness }}"
+      color_temp: "{{ light_temprature }}"
   - service: light.turn_on
     target:
       entity_id: >-
@@ -199,3 +221,4 @@ action:
     data:
       transition: "{{ transition_time }}"
       brightness_pct: "{{ main_light_brightness }}"
+      color_temp: "{{ light_temprature }}"

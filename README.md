@@ -7,7 +7,7 @@ A simple automated per-room lighting blueprint for Home Assistant.
 This blueprint will create looping automations that:
 
  - Set the light brightness of a room relative to the sun's elevation
- - 🚧 Set the color temperature of a room's lights based on the sun's position
+ - Set the color temperature of a room's lights based on the sun's position
  - Reduce the brightness of all the lights in a room when it is not occupied
  - Limit the brightness of "main" lights relative to non-main lights such as lamps
  - Only modify the room lights if a given switch/toggle is set to on
@@ -71,5 +71,6 @@ Ultimately, the following is the light brightness logic:
 
 ### Color Temperature
 
-WIP
+Auto color temperature changes (circadian lighting) are largely based from the template that can be found [here on the exchange](https://community.home-assistant.io/t/automatic-circadian-lighting-match-your-lights-color-temperature-to-the-sun/472105).
 
+Currently, all lights in the room are sent the messages to set the color temperature. In the future, I should set this to only be sent to lights that support it.
