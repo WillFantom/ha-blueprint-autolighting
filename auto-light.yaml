@@ -3,7 +3,7 @@ blueprint:
   description: Control an area's lights based on an occupancy sensor and the sun's position.
   domain: automation
   input:
-    light_target:
+    target_area:
       name: Light
       description: Lights in the given area will be controlled by the automation.
       selector:
