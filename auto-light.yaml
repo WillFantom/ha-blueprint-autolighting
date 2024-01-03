@@ -65,7 +65,7 @@ blueprint:
       description: |
         The peak brightness of the lights with Main in their friendly name will
         be scaled by this value.
-      default: 60
+      default: 50
       selector:
         number:
           min: 0
@@ -78,7 +78,7 @@ blueprint:
       description: |
         The peak brightness of the lights will be scaled by this value when the
         motion sensor determines the room to be unoccupied.
-      default: 30
+      default: 20
       selector:
         number:
           min: 0
@@ -114,11 +114,11 @@ blueprint:
       name: Transition Time
       description: |
         How many seconds should the light change brightness/temp over.
-      default: 10
+      default: 2
       selector:
         number:
-          min: 2
-          max: 30
+          min: 0
+          max: 10
           mode: slider
           step: 1
     min_color_temp:
