@@ -274,6 +274,11 @@ trigger:
       - !input toggle_switch
     from: null
     to: null
+  - platform: state
+    entity_id:
+      - !input nightmode_switch
+    from: null
+    to: null
 
 condition:
   - condition: state
