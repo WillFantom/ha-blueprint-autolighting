@@ -11,6 +11,7 @@ This blueprint will create looping automations that:
  - Reduce the brightness of all the lights in a room when it is not occupied
  - Limit the brightness of "main" lights relative to non-main lights such as lamps
  - Only modify the room lights if a given switch/toggle is set to on
+ - Have an alternative max brightness whilst in "night mode"
 
 The goal of this blueprint is not to be super configurable since it is unlikely
 to be used by anybody but me, so the feature set is pretty much always

@@ -25,7 +25,7 @@ blueprint:
           filter:
             - domain: input_boolean
     max_brightness:
-      name: Max Brightness
+      name: Maximum Brightness
       description: |
         The peak brightness of the lights when sun is fully down and the room is
         occupied.
@@ -33,6 +33,26 @@ blueprint:
       selector:
         number:
           min: 2
+          max: 100
+          unit_of_measurement: "%"
+          mode: slider
+          step: 1
+    nightmode_switch:
+      name: Night Mode Switch
+      description: |
+        If the given switch is on, all brightness calculations will use the nightmode max brightness in place of the standard maximum brightness.
+      selector:
+        entity:
+          filter:
+            - domain: input_boolean
+    nightmode_max_brightness:
+      name: Maximum Brightness (Night Mode)
+      description: |
+        When the nightmode switch is on, the peak brightness of the lights will be this value.
+      default: 10
+      selector:
+        number:
+          min: 1
           max: 100
           unit_of_measurement: "%"
           mode: slider
@@ -118,11 +138,19 @@ blueprint:
 variables:
   target_area_input: !input target_area
   toggle_switch: !input toggle_switch
+  nightmode_switch: !input nightmode_switch
 
   transition_time: !input transition_time
 
   max_brightness_input: !input max_brightness
-  max_brightness: "{{ max_brightness_input | float }}"
+  nightmode_max_brightness_input: !input nightmode_max_brightness
+  max_brightness: >-
+    {%- if states[nightmode_switch].state == 'on' -%}
+      {{ nightmode_max_brightness_input | float }}
+    {%- else -%}
+      {{ max_brightness_input | float }}
+    {%- endif -%}
+
   main_light_scale_input: !input main_light_scale
   main_light_scale: "{{ main_light_scale_input | float | multiply(0.01) }}"
 
