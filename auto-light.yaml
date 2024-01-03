@@ -1,5 +1,5 @@
 blueprint:
-  name: Baisc Light Control
+  name: Basic Light Control
   description: Control an area's lights based on an occupancy sensor and the sun's position.
   domain: automation
   input:
@@ -137,7 +137,7 @@ variables:
 
   min_color_temp: !input min_color_temp
   max_color_temp: !input max_color_temp
-  light_temprature: >-
+  light_temperature: >-
     {{ [([((1000000/(4791.67 - 3290.66/(1 + 0.222 * ([([0,state_attr('sun.sun', 'elevation')]|max),90]|min**0.81))))|int),min_color_temp]|max),max_color_temp]|min }}
 
   elevation_on: !input elevation_on
@@ -155,6 +155,46 @@ variables:
       {{ max_brightness | multiply(sun_scale) | multiply(vacancy_scale) | int | string }}
     {%- endif -%}
   main_light_brightness: "{{ standard_brightness | multiply(main_light_scale) | int | string }}"
+  standard_lights: >-
+    {%- set ns = namespace( lights = [] ) -%}
+    {%- for light_entity in expand(area_entities(area_name(target_area_input)) | select('match', 'light')) | list -%}
+      {%- if not 'Main' in state_attr(light_entity.entity_id, 'friendly_name') -%}
+        {%- if not 'color_temp' in state_attr(light_entity.entity_id, 'supported_color_modes') -%}
+          {%- set ns.lights = ns.lights + [light_entity.entity_id] -%}
+        {%- endif -%}
+      {%- endif -%}
+    {%- endfor -%}
+    {{ ns.lights }}
+  standard_lights_with_color: >-
+    {%- set ns = namespace( lights = [] ) -%}
+    {%- for light_entity in expand(area_entities(area_name(target_area_input)) | select('match', 'light')) | list -%}
+      {%- if not 'Main' in state_attr(light_entity.entity_id, 'friendly_name') -%}
+        {%- if 'color_temp' in state_attr(light_entity.entity_id, 'supported_color_modes') -%}
+          {%- set ns.lights = ns.lights + [light_entity.entity_id] -%}
+        {%- endif -%}
+      {%- endif -%}
+    {%- endfor -%}
+    {{ ns.lights }}
+  main_lights: >-
+    {%- set ns = namespace( lights = [] ) -%}
+    {%- for light_entity in expand(area_entities(area_name(target_area_input)) | select('match', 'light')) | list -%}
+      {%- if 'Main' in state_attr(light_entity.entity_id, 'friendly_name') -%}
+        {%- if not 'color_temp' in state_attr(light_entity.entity_id, 'supported_color_modes') -%}
+          {%- set ns.lights = ns.lights + [light_entity.entity_id] -%}
+        {%- endif -%}
+      {%- endif -%}
+    {%- endfor -%}
+    {{ ns.lights }}
+  main_lights_with_color: >-
+    {%- set ns = namespace( lights = [] ) -%}
+    {%- for light_entity in expand(area_entities(area_name(target_area_input)) | select('match', 'light')) | list -%}
+      {%- if 'Main' in state_attr(light_entity.entity_id, 'friendly_name') -%}
+        {%- if 'color_temp' in state_attr(light_entity.entity_id, 'supported_color_modes') -%}
+          {%- set ns.lights = ns.lights + [light_entity.entity_id] -%}
+        {%- endif -%}
+      {%- endif -%}
+    {%- endfor -%}
+    {{ ns.lights }}
 
 trigger:
   - platform: state
@@ -197,31 +237,29 @@ action:
           "
     - service: light.turn_on
       target:
-        entity_id: >-
-          {%- set ns = namespace( lights = [] ) -%}
-          {%- for light_entity in expand(area_entities(area_name(target_area_input)) | select('match', 'light')) | list -%}
-            {%- if not 'Main' in state_attr(light_entity.entity_id, 'friendly_name') -%}
-              {%- set ns.lights = ns.lights + [light_entity.entity_id] -%}
-            {%- endif -%}
-          {%- endfor -%}
-          {{ ns.lights }}
+        entity_id: "{{ standard_lights }}"
       data:
         transition: "{{ transition_time }}"
         brightness_pct: "{{ standard_brightness }}"
-        color_temp: "{{ light_temprature }}"
     - service: light.turn_on
       target:
-        entity_id: >-
-          {%- set ns = namespace( lights = [] ) -%}
-          {%- for light_entity in expand(area_entities(area_name(target_area_input)) | select('match', 'light')) | list -%}
-            {%- if 'Main' in state_attr(light_entity.entity_id, 'friendly_name') -%}
-              {%- set ns.lights = ns.lights + [light_entity.entity_id] -%}
-            {%- endif -%}
-          {%- endfor -%}
-          {{ ns.lights }}
+        entity_id: "{{ standard_lights_with_color }}"
+      data:
+        transition: "{{ transition_time }}"
+        brightness_pct: "{{ standard_brightness }}"
+        color_temp: "{{ light_temperature }}"
+    - service: light.turn_on
+      target:
+        entity_id: "{{ main_lights }}"
       data:
         transition: "{{ transition_time }}"
         brightness_pct: "{{ main_light_brightness }}"
-        color_temp: "{{ light_temprature }}"
+    - service: light.turn_on
+      target:
+        entity_id: "{{ main_lights_with_color }}"
+      data:
+        transition: "{{ transition_time }}"
+        brightness_pct: "{{ main_light_brightness }}"
+        color_temp: "{{ light_temperature }}"
 
 mode: parallel

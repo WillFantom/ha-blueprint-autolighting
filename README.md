@@ -71,6 +71,4 @@ Ultimately, the following is the light brightness logic:
 
 ### Color Temperature
 
-Auto color temperature changes (circadian lighting) are largely based from the template that can be found [here on the exchange](https://community.home-assistant.io/t/automatic-circadian-lighting-match-your-lights-color-temperature-to-the-sun/472105).
-
-Currently, all lights in the room are sent the messages to set the color temperature. In the future, I should set this to only be sent to lights that support it.
+Auto color temperature changes (circadian lighting) are largely based from the template that can be found [here on the exchange](https://community.home-assistant.io/t/automatic-circadian-lighting-match-your-lights-color-temperature-to-the-sun/472105). Only the lights that support the "color_temp" feature will be sent messages regarding color changes.
