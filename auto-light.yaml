@@ -142,35 +142,41 @@ variables:
   target_lights_input: !input target_lights
   target_lights: >-
     {%- set ns = namespace( lights = [] ) -%}
-    {%- set entity_ids = target_lights_input.entity_id -%}
-    {%- if entity_ids is string -%}
-      {%- set entity_ids = [entity_ids] -%}
-    {%- endif -%}
-    {%- for light_entity in expand(entity_ids | select('match', 'light'))  -%}
-      {%- set ns.lights = ns.lights + [light_entity.entity_id] -%}
-    {%- endfor -%}
-    {%- set device_ids = target_lights_input.device_id -%}
-    {%- if device_ids is string -%}
-      {%- set device_ids = [device_ids] -%}
-    {%- endif -%}
-    {%- for device in device_ids  -%}
-      {%- for light_entity in expand(device_entities(device) | select('match', 'light')) | list -%}
-        {%- if not light_entity.entity_id in ns.lights -%}
-          {%- set ns.lights = ns.lights + [light_entity.entity_id] -%}
-        {%- endif -%}
+    {%- if  'entity_id' in target_lights_input -%}
+      {%- set entity_ids = target_lights_input.entity_id -%}
+      {%- if entity_ids is string -%}
+        {%- set entity_ids = [entity_ids] -%}
+      {%- endif -%}
+      {%- for light_entity in expand(entity_ids | select('match', 'light'))  -%}
+        {%- set ns.lights = ns.lights + [light_entity.entity_id] -%}
       {%- endfor -%}
-    {%- endfor -%}
-    {%- set area_ids = target_lights_input.area_id -%}
-    {%- if area_ids is string -%}
-      {%- set area_ids = [area_ids] -%}
     {%- endif -%}
-    {%- for area_id in area_ids -%}
-      {%- for light_entity in expand(area_entities(area_id ) | select('match', 'light')) | list -%}
-        {%- if not light_entity.entity_id in ns.lights -%}
-          {%- set ns.lights = ns.lights + [light_entity.entity_id] -%}
-        {%- endif -%}
+    {%- if  'device_id' in target_lights_input -%}
+      {%- set device_ids = target_lights_input.device_id -%}
+      {%- if device_ids is string -%}
+        {%- set device_ids = [device_ids] -%}
+      {%- endif -%}
+      {%- for device in device_ids  -%}
+        {%- for light_entity in expand(device_entities(device) | select('match', 'light')) | list -%}
+          {%- if not light_entity.entity_id in ns.lights -%}
+            {%- set ns.lights = ns.lights + [light_entity.entity_id] -%}
+          {%- endif -%}
+        {%- endfor -%}
       {%- endfor -%}
-    {%- endfor -%}
+    {%- endif -%}
+    {%- if  'area_id' in target_lights_input -%}
+      {%- set area_ids = target_lights_input.area_id -%}
+      {%- if area_ids is string -%}
+        {%- set area_ids = [area_ids] -%}
+      {%- endif -%}
+      {%- for area_id in area_ids -%}
+        {%- for light_entity in expand(area_entities(area_id ) | select('match', 'light')) | list -%}
+          {%- if not light_entity.entity_id in ns.lights -%}
+            {%- set ns.lights = ns.lights + [light_entity.entity_id] -%}
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endfor -%}
+    {%- endif -%}
     {{ ns.lights }}
 
   toggle_switch: !input toggle_switch
